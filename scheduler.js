@@ -25,6 +25,12 @@ const contract = new ethers.Contract(
   wallet
 );
 
+// log function
+function logToFile(message) {
+  const timestamp = new Date().toISOString();
+  fs.appendFileSync('scheduler.log', `[${timestamp}] ${message}\n`);
+}
+
 // schedule the task to run every 1 minutes 
 cron.schedule('*/1 * * * *', async () => {
   console.log(`[${new Date().toISOString()}] Scheduler triggered - calling smart contract...`);
@@ -35,7 +41,10 @@ cron.schedule('*/1 * * * *', async () => {
     await tx.wait();
 
     console.log("Contract function executed successfully. Transaction hash:", tx.hash);
+    logToFile("Contract function executed successfully. Transaction hash:", tx.hash);
   } catch (error) {
     console.error("Failed to execute contract function:", error.message);
+    logToFile("Failed to execute contract function:", error.message);
   }
 });
+
