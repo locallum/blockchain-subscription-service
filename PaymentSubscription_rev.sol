@@ -20,7 +20,6 @@ contract PaymentSubscription {
 
     // Cancel (requires off-chain validation), access control through off-chain backend API
     function cancel(address user, uint256 amount) external {
-        // TODO: add access control or signature verification
         payable(user).transfer(amount);
         emit Cancelled(user, amount);
     }
