@@ -8,8 +8,8 @@ const API_BASE = "http://localhost:4000";
 
 const providers = [
   { name: "Netflix", address: "0x12eE580cBE99f9c66e4A1cA602e2a1E4A93b900e" },
-  { name: "Spotify (Not Working Yet)", address: "SPOTIFY-ADDRESS" },
-  { name: "Disney+ (Not Working Yet)", address: "DISNEY-ADDRESS" }
+  { name: "Spotify", address: "0x74B6dF08C3c0c84bBaafE080f171F26128cDF3e1" },
+  { name: "Disney+", address: "0x81b6a63f27a4e86fe1fc3d2af25cb7311642cd12" }
 ];
 
 
@@ -345,7 +345,7 @@ function App2() {
               <p>
                 <b>Sub ID:</b> {sub.id} | <b>Provider:</b> {sub.provider} |{" "}
                 <b>Amount:</b> {sub.amount} ETH |{" "}
-                <b>Duration: {sub.durationMonths} months | {" "}</b>
+                <b>Duration: {sub.duration} seconds | {" "}</b>
                 <b>Active:</b> {sub.isActive ? "Yes" : "No"}
               </p>
               <button onClick={() => cancelSubscription(sub.id)}>Cancel</button>

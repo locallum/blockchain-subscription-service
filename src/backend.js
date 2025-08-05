@@ -1,5 +1,3 @@
-import { parseEther, toUtf8Bytes } from "ethers";
-
 const express = require('express');
 const fs = require('fs');
 const cors = require('cors');
@@ -120,7 +118,7 @@ cron.schedule('*/1 * * * *', async () => {
     // automate claiming of payments (for providers)
     if (sub.isActive && !sub.isClaimed && now >= sub.startTime + sub.duration){
       try {
-        const tx = await contract.claim(sub.provider, parseEther(sub.amount));
+        const tx = await contract.claim(sub.provider, ethers.parseEther(sub.amount));
         await tx.wait();
 
         sub.isActive = false;
@@ -128,13 +126,13 @@ cron.schedule('*/1 * * * *', async () => {
         logToFile(`Claimed sub ${sub.id}, tx: ${tx.hash}`);
 
         // automatically resubscribe
-        const metadata = toUtf8Bytes(JSON.stringify({
+        const metadata = ethers.toUtf8Bytes(JSON.stringify({
           duration: sub.duration,
           timestamp: now
         }));
 
         const tx_resubscribe = await contract.subscribe(sub.provider, metadata, {
-          value: parseEther(sub.amount)
+          value: ethers.parseEther(sub.amount)
         });
 
         await tx_resubscribe.wait();
