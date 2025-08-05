@@ -864,7 +864,7 @@ function SubscribeForm({ onSubscribe, loading }) {
       return;
     }
     const providerAddress = providers[providerIndex].address;
-    onSubscribe(providerAddress, parseInt(months), amount);
+    onSubscribe(providerAddress, parseInt(months), parseInt(amount));
     setProviderIndex("");
     setMonths("");
     setAmount("");
