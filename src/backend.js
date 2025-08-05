@@ -1,3 +1,5 @@
+import { parseEther, toUtf8Bytes } from "ethers";
+
 const express = require('express');
 const fs = require('fs');
 const cors = require('cors');
@@ -5,6 +7,9 @@ const bodyParser = require('body-parser');
 const app = express();
 const PORT = 4000;
 const DATA_FILE = 'subscriptions.json';
+const { ethers } = require('ethers');
+const cron = require('node-cron');
+require('dotenv').config();
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -76,6 +81,88 @@ app.patch('/subscriptions/:id', (req, res) => {
   res.json(sub);
 });
 
+// log function
+function logToFile(message) {
+  const timestamp = new Date().toISOString();
+  fs.appendFileSync('scheduler.log', `[${timestamp}] ${message}\n`);
+}
+
+// define ABI
+const contractABI = [
+  "function claim(address provider, uint256 amount) public",
+  "function subscribe(address provider, bytes metadata) public payable"
+];
+
+// set up the blockchain provider using the RPC URL from .env
+const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
+
+// create a wallet instance from the private key, connected to the provider
+const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+
+// create a contract instance using its address, ABI, and the connected wallet
+const contract = new ethers.Contract(
+  process.env.CONTRACT_ADDRESS,
+  contractABI,
+  wallet
+);
+
+// schedule the task to run every 1 minutes 
+cron.schedule('*/1 * * * *', async () => {
+  console.log(`[${new Date().toISOString()}] Scheduler triggered - calling smart contract...`);
+
+  const subscriptions = loadSubscriptions();
+  const now = Math.floor(Date.now() / 1000);
+  const newSubscriptions = [...subscriptions];
+  let maxId = subscriptions.length > 0 ? Math.max(...subscriptions.map(s => s.id)) : 0;
+
+  for (const sub of subscriptions){
+
+    // automate claiming of payments (for providers)
+    if (sub.isActive && !sub.isClaimed && now >= sub.startTime + sub.duration){
+      try {
+        const tx = await contract.claim(sub.provider, parseEther(sub.amount));
+        await tx.wait();
+
+        sub.isActive = false;
+        sub.isClaimed = true;
+        logToFile(`Claimed sub ${sub.id}, tx: ${tx.hash}`);
+
+        // automatically resubscribe
+        const metadata = toUtf8Bytes(JSON.stringify({
+          duration: sub.duration,
+          timestamp: now
+        }));
+
+        const tx_resubscribe = await contract.subscribe(sub.provider, metadata, {
+          value: parseEther(sub.amount)
+        });
+
+        await tx_resubscribe.wait();
+
+        // create new subscription object with updated start time
+        const newSubscription = {
+          id: ++maxId,
+          user: sub.user,
+          provider: sub.provider,
+          amount: sub.amount,
+          startTime: now,
+          duration: sub.duration,
+          isActive: true,
+          isClaimed: false
+        };
+
+        newSubscriptions.push(newSubscription);
+        logToFile(`Re-subscribed ${newSubscription.id}, tx: ${tx_resubscribe.hash}`);
+      }
+      catch (err){
+        logToFile(`Failed processing sub ${sub.id}: ${err.message}`);
+      }
+    }
+  }
+  saveSubscriptions(newSubscriptions);
+});
+
+
 app.listen(PORT, () => {
-  console.log(`Backend running at http://localhost:${PORT}`);
+  console.log(`Backend + Scheduler running at http://localhost:${PORT}`);
 });
