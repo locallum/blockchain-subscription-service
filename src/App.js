@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Contract, BrowserProvider, parseEther, formatEther } from "ethers";
+import { Contract, BrowserProvider, parseEther, formatEther, parseUnits } from "ethers";
 
 const contractAddress = "0x33c42a6165BbBA4F3f035f31587c2c55eaFcD2d4";
 
@@ -610,8 +610,7 @@ function App() {
     }
     try {
       setLoading(true);
-      const secondsInMonth = 30 * 24 * 60 * 60;
-      const durationSeconds = durationMonths * secondsInMonth;
+      const durationSeconds = durationMonths * 30 * 24 * 60 * 60;
 
       const tx = await contract.subscribe(
         providerAddress,
@@ -636,7 +635,7 @@ function App() {
       const subs = [];
 
       for (let i = 0; i < subIds.length; i++) {
-        const id = Number(subIds[i]);
+        const id = subIds[i];
         const subRaw = await contract.subscriptions(id);
 
         const sub = {
@@ -822,7 +821,7 @@ function App() {
                       </button>
                     </div>
                     <div style={styles.subscriptionMeta}>
-                      <span>⏱️ Duration: {Math.round(sub.duration / (30 * 24 * 60 * 60))} months</span>
+                      <span>⏱️ Duration: {Number(sub.duration / (30n * 24n * 60n * 60n))} months</span>
                       <span style={sub.isActive ? styles.statusActive : styles.statusInactive}>
                         <span style={{...styles.statusDot, background: sub.isActive ? '#10b981' : '#ef4444'}}></span>
                         {sub.isActive ? 'Active' : 'Inactive'}
