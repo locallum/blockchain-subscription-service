@@ -2,21 +2,32 @@
   {
     "id": 0,
     "user": "0x8050d24CB2beb7da1949B86a1312A47BCd1ED47c",
-    "provider": "0x12eE580cBE99f9c66e4A1cA602e2a1E4A93b900e",
-    "amount": "0.0001",
-    "startTime": 1754371154.948,
-    "duration": 2592000,
+    "provider": "0x74B6dF08C3c0c84bBaafE080f171F26128cDF3e1",
+    "amount": "10000000",
+    "startTime": 1754387351.92,
+    "duration": 90,
     "isActive": false,
-    "isClaimed": false
+    "isClaimed": true
   },
   {
     "id": 1,
     "user": "0x8050d24CB2beb7da1949B86a1312A47BCd1ED47c",
-    "provider": "0x12eE580cBE99f9c66e4A1cA602e2a1E4A93b900e",
-    "amount": "0.0001",
-    "startTime": 1754371887.517,
-    "duration": 5184000,
+    "provider": "0x74B6dF08C3c0c84bBaafE080f171F26128cDF3e1",
+    "amount": "10000000",
+    "startTime": 1754387460,
+    "duration": 90,
     "isActive": false,
-    "isClaimed": false
+    "isClaimed": true
+  },
+  {
+    "id": 2,
+    "user": "0x8050d24CB2beb7da1949B86a1312A47BCd1ED47c",
+    "provider": "0x74B6dF08C3c0c84bBaafE080f171F26128cDF3e1",
+    "amount": "10000000",
+    "startTime": 1754387567,
+    "duration": 90,
+    "isActive": false,
+    "isClaimed": false,
+    "isCancelled": true
   }
 ]

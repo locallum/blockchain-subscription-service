@@ -206,7 +206,8 @@ function App2() {
     }
     try {
       const secondsInMonth = 30 * 24 * 60 * 60; // approx seconds in one month
-      const durationSeconds = durationMonths * secondsInMonth;
+      // const durationSeconds = durationMonths * secondsInMonth;
+      const durationSeconds = durationMonths // testing purposes
 
       const metadata = toUtf8Bytes(JSON.stringify({
         duration: durationSeconds,
@@ -216,7 +217,7 @@ function App2() {
       const tx = await contract.subscribe(
         providerAddress,
         metadata,
-        { value: parseEther(amountEth) }
+        { value: amountEth.toString() }
       );
       await tx.wait();
 
@@ -247,6 +248,7 @@ function App2() {
       // fetch user subscriptions from backend
       const res = await fetch(`${API_BASE}/subscriptions?user=${account}`);
       const data = await res.json();
+
       const activeSubscriptions = data.filter(sub => sub.isActive);
 
       setSubscriptions(activeSubscriptions);
@@ -261,18 +263,20 @@ function App2() {
     try {
       // call contract to process refund
       const subscription = subscriptions.find(s => s.id === id);
-      const tx = await contract.cancel(subscription.user, parseEther(subscription.amount));
+      const tx = await contract.cancel(subscription.user, subscription.amount);
       await tx.wait();
 
-      // set subscription inactive on backend
+      // update cancellation to backend
       await fetch(`${API_BASE}/subscriptions/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isActive: false })
+        body: JSON.stringify({ isActive: false, isCancelled: true })
       });
 
-      alert("Subscription cancelled");
+     
+      alert("Subscription cancelled"); 
       loadSubscriptions();
+      
     } catch (err) {
       alert("Cancel failed: " + err.message);
     }
@@ -284,9 +288,8 @@ function App2() {
     try {
       const res = await fetch(`${API_BASE}/claimables?provider=${account}`);
       const data = await res.json();
-      const timeNow = Math.floor(Date.now() / 1000);
-      const claimable = data.filter(sub => sub.isActive && !sub.isClaimed && timeNow >= (sub.startTime + sub.duration));
-      setClaimablePayments(claimable);
+
+      setClaimablePayments(data);
     } catch (err) {
       console.error("Error loading claimable payments:", err);
     }
@@ -297,7 +300,7 @@ function App2() {
     if (!contract) return;
     try {
       const subscription = claimablePayments.find(s => s.id === id);
-      const tx = await contract.claim(subscription.provider, parseEther(subscription.amount));
+      const tx = await contract.claim(subscription.provider, subscription.amount);
       await tx.wait();
 
       // set subscription as claimed, inactive on backend
@@ -307,21 +310,55 @@ function App2() {
         body: JSON.stringify({ isClaimed: true, isActive: false })
       });
 
+      // claiming uncancelled subscription, auto-renew
+      if (!subscription.isCancelled){
+        const now = Math.floor(Date.now() / 1000);
 
-      alert("Payment claimed");
-      loadClaimablePayments();
+        const metadata = toUtf8Bytes(JSON.stringify({
+          duration: subscription.duration,
+          timestamp: now
+        }));
+
+        const tx2 = await contract.subscribe(subscription.provider, metadata, {
+          value: subscription.amount.toString()
+        });
+
+        await tx2.wait();
+
+        // update subscription
+        await fetch(`${API_BASE}/subscriptions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user: subscription.user,
+          provider: subscription.provider,
+          amount: subscription.amount,
+          startTime: now,
+          duration: subscription.duration
+          })
+        });
+
+        alert("Payment claimed and subscription renewed!");
+        loadSubscriptions();
+        loadClaimablePayments();
+      }
+      
     } catch (err) {
       alert("Claim failed: " + err.message);
     }
   }
 
-  // Refresh subscriptions and claimable payments when contract or account changes
-  useEffect(() => {
-    if (contract && account) {
-      loadSubscriptions();
-      loadClaimablePayments();
-    }
-  }, [contract, account]);
+// Auto-polling
+useEffect(() => {
+  if (!contract || !account) return;
+
+  const interval = setInterval(() => {
+    loadSubscriptions();
+    loadClaimablePayments();
+  }, 1000); // every second
+
+  return () => clearInterval(interval); // cleanup
+}, [contract, account]);
 
   return (
     <div style={{ padding: 20, fontFamily: "Arial, sans-serif" }}>
@@ -344,7 +381,7 @@ function App2() {
             <div key={sub.id} style={{ marginBottom: 10 }}>
               <p>
                 <b>Sub ID:</b> {sub.id} | <b>Provider:</b> {sub.provider} |{" "}
-                <b>Amount:</b> {sub.amount} ETH |{" "}
+                <b>Amount:</b> {formatEther(sub.amount)} wei |{" "}
                 <b>Duration: {sub.duration} seconds | {" "}</b>
                 <b>Active:</b> {sub.isActive ? "Yes" : "No"}
               </p>
@@ -358,7 +395,7 @@ function App2() {
             <div key={sub.id} style={{ marginBottom: 10 }}>
               <p>
                 <b>Payment ID:</b> {sub.id} | <b>User:</b> {sub.user} |{" "}
-                <b>Amount:</b> {sub.amount} ETH
+                <b>Amount:</b> {formatEther(sub.amount)} wei
               </p>
               <button onClick={() => claimPayment(sub.id)}>Claim</button>
             </div>
@@ -403,7 +440,7 @@ function SubscribeForm({ onSubscribe }) {
       </select>
       <input
         type="number"
-        placeholder="Duration (months)"
+        placeholder="Duration (seconds)"
         value={months}
         onChange={(e) => setMonths(e.target.value)}
         style={{ marginRight: 10, width: 150 }}
@@ -411,7 +448,7 @@ function SubscribeForm({ onSubscribe }) {
       />
       <input
         type="text"
-        placeholder="Amount in ETH"
+        placeholder="Amount in Wei"
         value={amount}
         onChange={(e) => setAmount(e.target.value)}
         style={{ marginRight: 10, width: 150 }}
