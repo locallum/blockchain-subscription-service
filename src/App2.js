@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Contract, BrowserProvider, parseEther, formatEther } from "ethers";
+import { Contract, BrowserProvider, parseEther, formatEther, toUtf8Bytes } from "ethers";
 
 // const contractAddress = "0x33c42a6165BbBA4F3f035f31587c2c55eaFcD2d4";
 const contractAddress = "0xa5C4E61FfD37708a5BB8f4F3A745Db0e95C12D9C";
+
+const API_BASE = "http://localhost:4000";
 
 const providers = [
   { name: "Netflix", address: "0x12eE580cBE99f9c66e4A1cA602e2a1E4A93b900e" },
@@ -10,228 +12,6 @@ const providers = [
   { name: "Disney+ (Not Working Yet)", address: "DISNEY-ADDRESS" }
 ];
 
-// Paste your contract ABI here:
-// const contractABI = [
-//   {
-//     "inputs": [
-//       {
-//         "internalType": "uint256",
-//         "name": "_subId",
-//         "type": "uint256"
-//       }
-//     ],
-//     "name": "cancel",
-//     "outputs": [],
-//     "stateMutability": "nonpayable",
-//     "type": "function"
-//   },
-//   {
-//     "inputs": [
-//       {
-//         "internalType": "uint256",
-//         "name": "_subId",
-//         "type": "uint256"
-//       }
-//     ],
-//     "name": "claim",
-//     "outputs": [],
-//     "stateMutability": "nonpayable",
-//     "type": "function"
-//   },
-//   {
-//     "inputs": [
-//       {
-//         "internalType": "address",
-//         "name": "_provider",
-//         "type": "address"
-//       },
-//       {
-//         "internalType": "uint256",
-//         "name": "_duration",
-//         "type": "uint256"
-//       }
-//     ],
-//     "name": "subscribe",
-//     "outputs": [],
-//     "stateMutability": "payable",
-//     "type": "function"
-//   },
-//   {
-//     "inputs": [],
-//     "stateMutability": "nonpayable",
-//     "type": "constructor"
-//   },
-//   {
-//     "anonymous": false,
-//     "inputs": [
-//       {
-//         "indexed": true,
-//         "internalType": "uint256",
-//         "name": "subId",
-//         "type": "uint256"
-//       }
-//     ],
-//     "name": "Cancelled",
-//     "type": "event"
-//   },
-//   {
-//     "anonymous": false,
-//     "inputs": [
-//       {
-//         "indexed": true,
-//         "internalType": "uint256",
-//         "name": "subId",
-//         "type": "uint256"
-//       }
-//     ],
-//     "name": "Claimed",
-//     "type": "event"
-//   },
-//   {
-//     "anonymous": false,
-//     "inputs": [
-//       {
-//         "indexed": true,
-//         "internalType": "uint256",
-//         "name": "subId",
-//         "type": "uint256"
-//       },
-//       {
-//         "indexed": true,
-//         "internalType": "address",
-//         "name": "user",
-//         "type": "address"
-//       },
-//       {
-//         "indexed": false,
-//         "internalType": "address",
-//         "name": "provider",
-//         "type": "address"
-//       },
-//       {
-//         "indexed": false,
-//         "internalType": "uint256",
-//         "name": "amount",
-//         "type": "uint256"
-//       }
-//     ],
-//     "name": "Subscribed",
-//     "type": "event"
-//   },
-//   {
-//     "inputs": [
-//       {
-//         "internalType": "address",
-//         "name": "_provider",
-//         "type": "address"
-//       }
-//     ],
-//     "name": "getClaimablePayments",
-//     "outputs": [
-//       {
-//         "internalType": "uint256[]",
-//         "name": "",
-//         "type": "uint256[]"
-//       }
-//     ],
-//     "stateMutability": "view",
-//     "type": "function"
-//   },
-//   {
-//     "inputs": [
-//       {
-//         "internalType": "address",
-//         "name": "_user",
-//         "type": "address"
-//       }
-//     ],
-//     "name": "getUserSubscriptions",
-//     "outputs": [
-//       {
-//         "internalType": "uint256[]",
-//         "name": "",
-//         "type": "uint256[]"
-//       }
-//     ],
-//     "stateMutability": "view",
-//     "type": "function"
-//   },
-//   {
-//     "inputs": [],
-//     "name": "owner",
-//     "outputs": [
-//       {
-//         "internalType": "address",
-//         "name": "",
-//         "type": "address"
-//       }
-//     ],
-//     "stateMutability": "view",
-//     "type": "function"
-//   },
-//   {
-//     "inputs": [],
-//     "name": "subscriptionId",
-//     "outputs": [
-//       {
-//         "internalType": "uint256",
-//         "name": "",
-//         "type": "uint256"
-//       }
-//     ],
-//     "stateMutability": "view",
-//     "type": "function"
-//   },
-//   {
-//     "inputs": [
-//       {
-//         "internalType": "uint256",
-//         "name": "",
-//         "type": "uint256"
-//       }
-//     ],
-//     "name": "subscriptions",
-//     "outputs": [
-//       {
-//         "internalType": "address",
-//         "name": "user",
-//         "type": "address"
-//       },
-//       {
-//         "internalType": "address",
-//         "name": "provider",
-//         "type": "address"
-//       },
-//       {
-//         "internalType": "uint256",
-//         "name": "amount",
-//         "type": "uint256"
-//       },
-//       {
-//         "internalType": "uint256",
-//         "name": "startTime",
-//         "type": "uint256"
-//       },
-//       {
-//         "internalType": "uint256",
-//         "name": "duration",
-//         "type": "uint256"
-//       },
-//       {
-//         "internalType": "bool",
-//         "name": "isActive",
-//         "type": "bool"
-//       },
-//       {
-//         "internalType": "bool",
-//         "name": "isClaimed",
-//         "type": "bool"
-//       }
-//     ],
-//     "stateMutability": "view",
-//     "type": "function"
-//   }
-// ];
 
 const contractABI =
     [
@@ -428,20 +208,20 @@ function App2() {
       const secondsInMonth = 30 * 24 * 60 * 60; // approx seconds in one month
       const durationSeconds = durationMonths * secondsInMonth;
 
-      const metadata = {
+      const metadata = toUtf8Bytes(JSON.stringify({
         duration: durationSeconds,
         timestamp: Date.now()
-      }
+      }));
 
       const tx = await contract.subscribe(
         providerAddress,
-        JSON.stringify(metadata),
+        metadata,
         { value: parseEther(amountEth) }
       );
       await tx.wait();
 
       // record in backend
-      await fetch("/subscriptions", {
+      await fetch(`${API_BASE}/subscriptions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -465,9 +245,11 @@ function App2() {
     if (!contract || !account) return;
     try {
       // fetch user subscriptions from backend
-      const res = await fetch(`/subscriptions?user=${account}`);
+      const res = await fetch(`${API_BASE}/subscriptions?user=${account}`);
       const data = await res.json();
-      setSubscriptions(data);
+      const activeSubscriptions = data.filter(sub => sub.isActive);
+
+      setSubscriptions(activeSubscriptions);
     } catch (err) {
       console.error("Error loading subscriptions:", err);
     }
@@ -479,11 +261,11 @@ function App2() {
     try {
       // call contract to process refund
       const subscription = subscriptions.find(s => s.id === id);
-      const tx = await contract.cancel(subscription.user, subscription.amount);
+      const tx = await contract.cancel(subscription.user, parseEther(subscription.amount));
       await tx.wait();
 
       // set subscription inactive on backend
-      await fetch(`/subscriptions/${id}`, {
+      await fetch(`${API_BASE}/subscriptions/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isActive: false })
@@ -500,9 +282,11 @@ function App2() {
   async function loadClaimablePayments() {
     if (!contract || !account) return;
     try {
-      const res = await fetch(`/claimables?provider=${account}`);
+      const res = await fetch(`${API_BASE}/claimables?provider=${account}`);
       const data = await res.json();
-      setClaimablePayments(data);
+      const timeNow = Math.floor(Date.now() / 1000);
+      const claimable = data.filter(sub => sub.isActive && !sub.isClaimed && timeNow >= (sub.startTime + sub.duration));
+      setClaimablePayments(claimable);
     } catch (err) {
       console.error("Error loading claimable payments:", err);
     }
@@ -513,11 +297,11 @@ function App2() {
     if (!contract) return;
     try {
       const subscription = claimablePayments.find(s => s.id === id);
-      const tx = await contract.claim(subscription.provider, subscription.amount);
+      const tx = await contract.claim(subscription.provider, parseEther(subscription.amount));
       await tx.wait();
 
       // set subscription as claimed, inactive on backend
-      await fetch(`/subscriptions/${id}`, {
+      await fetch(`${API_BASE}/subscriptions/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isClaimed: true, isActive: false })
@@ -560,7 +344,8 @@ function App2() {
             <div key={sub.id} style={{ marginBottom: 10 }}>
               <p>
                 <b>Sub ID:</b> {sub.id} | <b>Provider:</b> {sub.provider} |{" "}
-                <b>Amount:</b> {formatEther(sub.amount)} ETH |{" "}
+                <b>Amount:</b> {sub.amount} ETH |{" "}
+                <b>Duration: {sub.durationMonths} months | {" "}</b>
                 <b>Active:</b> {sub.isActive ? "Yes" : "No"}
               </p>
               <button onClick={() => cancelSubscription(sub.id)}>Cancel</button>
@@ -573,7 +358,7 @@ function App2() {
             <div key={sub.id} style={{ marginBottom: 10 }}>
               <p>
                 <b>Payment ID:</b> {sub.id} | <b>User:</b> {sub.user} |{" "}
-                <b>Amount:</b> {formatEther(sub.amount)} ETH
+                <b>Amount:</b> {sub.amount} ETH
               </p>
               <button onClick={() => claimPayment(sub.id)}>Claim</button>
             </div>

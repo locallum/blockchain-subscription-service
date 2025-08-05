@@ -1,1 +1,22 @@
-[]
+[
+  {
+    "id": 0,
+    "user": "0x8050d24CB2beb7da1949B86a1312A47BCd1ED47c",
+    "provider": "0x12eE580cBE99f9c66e4A1cA602e2a1E4A93b900e",
+    "amount": "0.0001",
+    "startTime": 1754371154.948,
+    "duration": 2592000,
+    "isActive": false,
+    "isClaimed": false
+  },
+  {
+    "id": 1,
+    "user": "0x8050d24CB2beb7da1949B86a1312A47BCd1ED47c",
+    "provider": "0x12eE580cBE99f9c66e4A1cA602e2a1E4A93b900e",
+    "amount": "0.0001",
+    "startTime": 1754371887.517,
+    "duration": 5184000,
+    "isActive": false,
+    "isClaimed": false
+  }
+]
