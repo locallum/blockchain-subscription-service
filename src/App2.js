@@ -428,12 +428,31 @@ function App2() {
       const secondsInMonth = 30 * 24 * 60 * 60; // approx seconds in one month
       const durationSeconds = durationMonths * secondsInMonth;
 
+      const metadata = {
+        duration: durationSeconds,
+        timestamp: Date.now()
+      }
+
       const tx = await contract.subscribe(
         providerAddress,
-        durationSeconds,
+        JSON.stringify(metadata),
         { value: parseEther(amountEth) }
       );
       await tx.wait();
+
+      // record in backend
+      await fetch("/subscriptions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user: account,
+          provider: providerAddress,
+          amount: amountEth,
+          startTime: Date.now() / 1000,
+          duration: durationSeconds
+        })
+      });
+
       alert("Subscribed!");
       loadSubscriptions();
     } catch (err) {
@@ -445,32 +464,10 @@ function App2() {
   async function loadSubscriptions() {
     if (!contract || !account) return;
     try {
-      const subIds = await contract.getUserSubscriptions(account);
-      console.log(subIds);
-      const subs = [];
-
-      for (let i = 0; i < subIds.length; i++) {
-        const id = Number(subIds[i]);
-
-        const subRaw = await contract.subscriptions(id);
-
-        // Clean mapping
-        const sub = {
-          id,
-          user: subRaw.user,
-          provider: subRaw.provider,
-          amount: subRaw.amount,
-          startTime: subRaw.startTime.toNumber ? subRaw.startTime.toNumber() : subRaw.startTime,
-          duration: subRaw.duration.toNumber ? subRaw.duration.toNumber() : subRaw.duration,
-          isActive: subRaw.isActive,
-          isClaimed: subRaw.isClaimed,
-        };
-
-        subs.push(sub);
-      }
-
-      console.log("Loaded subscriptions:", subs);
-      setSubscriptions(subs);
+      // fetch user subscriptions from backend
+      const res = await fetch(`/subscriptions?user=${account}`);
+      const data = await res.json();
+      setSubscriptions(data);
     } catch (err) {
       console.error("Error loading subscriptions:", err);
     }
@@ -480,8 +477,18 @@ function App2() {
   async function cancelSubscription(id) {
     if (!contract) return;
     try {
-      const tx = await contract.cancel(id);
+      // call contract to process refund
+      const subscription = subscriptions.find(s => s.id === id);
+      const tx = await contract.cancel(subscription.user, subscription.amount);
       await tx.wait();
+
+      // set subscription inactive on backend
+      await fetch(`/subscriptions/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: false })
+      });
+
       alert("Subscription cancelled");
       loadSubscriptions();
     } catch (err) {
@@ -493,15 +500,9 @@ function App2() {
   async function loadClaimablePayments() {
     if (!contract || !account) return;
     try {
-      const claimIds = await contract.getClaimablePayments(account);
-      const claims = [];
-
-      for (let i = 0; i < claimIds.length; i++) {
-        const id = claimIds[i].toNumber();
-        const sub = await contract.subscriptions(id);
-        claims.push({ id, ...sub });
-      }
-      setClaimablePayments(claims);
+      const res = await fetch(`/claimables?provider=${account}`);
+      const data = await res.json();
+      setClaimablePayments(data);
     } catch (err) {
       console.error("Error loading claimable payments:", err);
     }
@@ -511,8 +512,18 @@ function App2() {
   async function claimPayment(id) {
     if (!contract) return;
     try {
-      const tx = await contract.claim(id);
+      const subscription = claimablePayments.find(s => s.id === id);
+      const tx = await contract.claim(subscription.provider, subscription.amount);
       await tx.wait();
+
+      // set subscription as claimed, inactive on backend
+      await fetch(`/subscriptions/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isClaimed: true, isActive: false })
+      });
+
+
       alert("Payment claimed");
       loadClaimablePayments();
     } catch (err) {
