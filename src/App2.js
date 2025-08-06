@@ -784,10 +784,10 @@ function App() {
                       </div>
                       <button
                         onClick={() => cancelSubscription(sub.id)}
-                        disabled={loading || !sub.isActive}
+                        disabled={loading || !sub.isActive || Date.now() >= sub.startTime + sub.duration}
                         style={{
                           ...styles.buttonCancel,
-                          ...(loading || !sub.isActive ? styles.buttonDisabled : {})
+                          ...(loading || !sub.isActive || Date.now() >= sub.startTime + sub.duration ? styles.buttonDisabled : {})
                         }}
                       >
                         Cancel

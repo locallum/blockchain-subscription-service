@@ -58,7 +58,8 @@ app.post('/subscriptions', (req, res) => {
     startTime: req.body.startTime,
     duration: req.body.duration,
     isActive: true,
-    isClaimed: false
+    isClaimed: false,
+    isCancelled: false
   };
   subs.push(newSub);
   saveSubscriptions(subs);
